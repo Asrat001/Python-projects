@@ -1,10 +1,14 @@
-from os import scandir ,rename
-from os.path import exists , splitext, join
-from  shutil import move
+from os import scandir, rename
+from os.path import splitext, exists, join
+from shutil import move
 from time import sleep
+
 import logging
+
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+
+
 source_dir ="/home/asrat/Downloads" 
 dist_dir_img ="/home/asrat/Downloads/images"
 dist_dir_pdf="/home/asrat/Downloads/pdfs"
@@ -17,7 +21,7 @@ image_extensions = [".jpg", ".jpeg", ".jpe", ".jif", ".jfif", ".jfi", ".png", ".
 video_extensions = [".webm", ".mpg", ".mp2", ".mpeg", ".mpe", ".mpv", ".ogg",
                     ".mp4", ".mp4v", ".m4v", ".avi", ".wmv", ".mov", ".qt", ".flv", ".swf", ".avchd"]
 # ? supported Audio types
-audio_extensions = [".m4a", ".flac", "mp3", ".wav", ".wma", ".aac"]
+audio_extensions = [".m4a", ".flac", ".mp3", ".wav", ".wma", ".aac"]
 # ? supported Document types
 document_extensions = [".doc", ".docx", ".odt",
                        ".pdf", ".xls", ".xlsx", ".ppt", ".pptx"]
@@ -40,16 +44,54 @@ def move_file(dest,name,entry):
     move(entry,dest)
 
 
+
 class MoverHandler(FileSystemEventHandler):
+
     def on_modified(self, event):
-        print("heyee")
+    
+      with scandir(source_dir) as source:
+            for entry in source:
+                name=entry.name
+                self.check_document_file(entry,name)
+                self.check_image_file(entry,name)
+                self.check_video_file(entry,name)
+
+    def check_image_file(self,entry,name):
+        for image_extension in image_extensions:
+            if(name.endswith(image_extension) or name.endswith(image_extension.upper())):
+                move_file(dist_dir_img,name,entry)
+                logging.info(f"Moved image file: {name}")
+
+   
+    def check_document_file(self,entry,name):   
+        for document in document_extensions:
+            if name.endswith(document) or name.endswith(document.upper()):
+                move_file(dist_dir_pdf,name,entry)
+                logging.info(f"Moved document file: {name}")
+        
+    def check_video_file(self,entry,name):                            
+         for video in video_extensions:
+             if name.endswith(str(video)) or name.endswith(video.upper()):
+                 move_file(dist_dir_video,name,entry)
+
+
+
+
+p = MoverHandler()
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
-    path = source_dir
+    path =source_dir
     event_handler = MoverHandler()
     observer = Observer()
     observer.schedule(event_handler, path, recursive=True)
@@ -60,3 +102,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
+
+  
