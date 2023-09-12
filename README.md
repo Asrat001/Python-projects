@@ -1,8 +1,7 @@
 # Website Blocker Python
 
 
-Intro 
-------------
+
 
 Hi Guys 👋 
 
