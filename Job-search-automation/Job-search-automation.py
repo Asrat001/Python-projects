@@ -7,9 +7,9 @@ import xmltodict
 import json
 
 def main():
-      sender_email="asratadane169@gmail.com"
-      sender_password="vhhg qrxv cjbz vtyt"
-      receiver_email="asratadane169@gmail.com"
+      sender_email="youremail@gmail.com"
+      sender_password="yourpassword"
+      receiver_email="youremail@gmail.com"
       subject="IE Networks JObs"
       jobs=get_Jobs()
       message=formating_Message(jobs)
