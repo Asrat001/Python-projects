@@ -5,10 +5,16 @@ import threading
 import re
 import time
 from datetime import datetime,timedelta
+import vonage
+
 
 user_data = {}
-TOKEN = 'your token'
-
+TOKEN = '6749837961:AAG1ybD-NI8GVLjGC_dRskS8mLkm35l4m9M'
+api_key = '931607dd'
+api_secret = '9qTpbBQCJf1tfDbc'
+virtual_number = 'Vonage APIs'
+client = vonage.Client(key=api_key, secret=api_secret)
+Sms=vonage.Sms(client)
 
 
 
@@ -28,23 +34,30 @@ def set_time(update, context):
 
 def process_message(update, context):
     am_pm_pattern = re.compile(r'\b(?:am|pm)\b', re.IGNORECASE)
-    
     chat_id = update.effective_chat.id
     if chat_id in user_data and user_data[chat_id]['status'] == 'waiting_time':
         user_data[chat_id]['time'] = update.message.text
-        user_data[chat_id]['status'] = 'waiting_message'
+        user_data[chat_id]['status'] = 'waiting_phone'
         match = re.search(am_pm_pattern, user_data[chat_id]['time'])
-       
         if match:
-             context.bot.send_message(chat_id=chat_id, text="Reminder time set. Send the reminder message.")
+             context.bot.send_message(chat_id=chat_id, text="Reminder time set. Send the reminder phone number ")
+             
         else:
              context.bot.send_message(chat_id=chat_id, text="Your time format is not correct")
-    elif chat_id in user_data and user_data[chat_id]['status'] == 'waiting_message':
-        reminder_message = update.message.text
-        reminder_time = user_data[chat_id]['time']
-       
+    
         
-        schedule_reminder(context.bot, chat_id, reminder_message, reminder_time )
+       
+    elif chat_id in user_data and user_data[chat_id]['status'] == 'waiting_phone':
+        user_data[chat_id]['phone'] = update.message.text
+        user_data[chat_id]['status'] = 'waiting_message'
+        context.bot.send_message(chat_id=chat_id, text=" you sususfully set Time and Phone Number now set your Reminder")
+        
+    elif chat_id in user_data and  user_data[chat_id]['status']== 'waiting_message':
+        reminder_message = update.message.text
+        reminder_time = user_data[chat_id]['time'] 
+        reminder_Phone =user_data[chat_id]['phone']
+
+        schedule_reminder(context.bot, chat_id, reminder_Phone,reminder_message, reminder_time )
         context.bot.send_message(chat_id=chat_id, text=f"Reminder scheduled for {reminder_time}.")
         user_data[chat_id].pop('time')  # Clear time for the next reminder
         user_data[chat_id]['status'] = 'waiting_time' 
@@ -54,7 +67,7 @@ def process_message(update, context):
     else:
         context.bot.send_message(chat_id=chat_id, text="Please set the reminder time first using /settime.")
 
-def schedule_reminder(bot, chat_id, reminder_message, reminder_time,):
+def schedule_reminder(bot, chat_id,reminder_Phone, reminder_message, reminder_time,):
    
     
     pm_pattern = re.compile(r'\b(?:pm)\b', re.IGNORECASE)
@@ -67,12 +80,22 @@ def schedule_reminder(bot, chat_id, reminder_message, reminder_time,):
      
     # cleaned_timeAM = reminder_time[:matchAM.start()] + reminder_time[matchAM.end():]
   
+    print(reminder_Phone)
+    schedule.every().day.at(str(formatted_time)).do(send_reminder, bot, chat_id, reminder_message,reminder_Phone)
 
-    schedule.every().day.at(str(formatted_time)).do(send_reminder, bot, chat_id, reminder_message)
-
-def send_reminder(bot, chat_id, message):
-    text = f" your <b>Remander is</b> .\n {message} \n \n <i>follow me on Linkedin at </i>, and <a href='https://www.linkedin.com/in/asrat-adane-50a521240/'>Asrat Adane</a>."
+def send_reminder(bot, chat_id, message,phone):
+    text = f" your <b>Remander is</b> .\n {message} \n \n <i>follow me on Linkedin at </i>, at <a href='https://www.linkedin.com/in/asrat-adane-50a521240/'>Asrat Adane</a>."
     bot.send_message(chat_id=chat_id, text=text,parse_mode=ParseMode.HTML)
+    print(phone)
+    responseData= Sms.send_message({
+    'from': virtual_number,
+    'to':"251"+phone,
+    'text':message+" \n"+"From Assrat-ReminderBot"
+                      })
+    if responseData["messages"][0]["status"] == "0":
+      print("Message sent successfully.")
+    else:
+      print(f"Message failed with error: {responseData['messages'][0]['error-text']}")
 
 def run_scheduler():
     while True:
